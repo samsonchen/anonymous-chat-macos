@@ -215,8 +215,8 @@ flowchart TD
 
 | 指令 | 傳什麼 | 結果 |
 |---|---|---|
-| `join_room`（進入） | 代號、這個分頁的暗碼 | 成功，或失敗並說明原因：`taken`（已被使用）、`invalid`（格式不符） |
-| `send_message`（送訊息） | 代號、暗碼、內容 | 成功，或失敗：`not_member`（你已不在線上）、`empty`（空白）、`too_long`（超過 500 字） |
+| `join_room`（進入） | 代號、這個分頁的暗碼 | 成功，或失敗並說明原因：`taken`（已被使用）、`invalid`（格式不符）、`unavailable`（連不上，畫面顯示「目前無法連線」） |
+| `send_message`（送訊息） | 代號、暗碼、內容 | 成功，或失敗：`not_member`（你已不在線上）、`empty`（空白）、`too_long`（超過 500 字）、`unavailable`（連不上） |
 | `heartbeat`（心跳） | 代號、暗碼 | 每 10 秒呼叫一次，告訴資料庫「我還在」。 |
 | `leave_room`（離開） | 代號、暗碼 | 立刻離開並釋出代號。 |
 | `load_recent`（讀最近訊息） | 要幾則 | 回傳最近的訊息，進入時要 50 則。 |
@@ -231,8 +231,11 @@ flowchart TD
 | `member_joined` | 有人加入線上名單 | 一個成員 |
 | `member_left` | 有人從線上名單移除 | 該成員的 `nickname_key` |
 | `connection_changed` | 連線狀態改變 | `online`（正常）或 `reconnecting`（重新連線中） |
+| `session_lost` | 已經加入的人，因為斷線太久而失去資格（代號被別人用掉） | 原因：`taken` 或 `not_member`。畫面收到後回到輸入代號畫面，並顯示說明原因的提示。 |
 
-在 Supabase 裡，前三種事件對應的是資料表的「新增」與「刪除」通知。`connection_changed` 則是前端偵測到網路線斷掉或接回來時自己產生。
+在 Supabase 裡，前三種事件對應的是資料表的「新增」與「刪除」通知。`connection_changed` 是前端偵測到網路線斷掉或接回來時自己產生；`session_lost` 是重新連線後重新加入（`join_room`）被回覆 `taken` 時產生。
+
+（`session_lost` 與 `unavailable` 是階段一實作畫面時補上的，原本的約定沒有列。）
 
 ### 5.4 分頁暗碼（為什麼需要）
 
@@ -460,7 +463,7 @@ flowchart TD
 
 **儲存庫（repo）**：放這個專案所有檔案的地方，在 GitHub 上。
 
-以下是預計的結構。**目前只有 `docs/`，其餘是之後才會建立的。**
+以下是結構。**階段一已經建好，只有標明「階段二才新增」的（`supabase.ts`、`supabase/`）還沒有。**
 
 ```
 anonymous-chat-macos/
@@ -473,24 +476,34 @@ anonymous-chat-macos/
 │
 ├── docs/
 │   ├── requirements.md        需求說明（已有）
-│   └── architecture.md        這份文件
+│   ├── architecture.md        這份文件
+│   └── design.md              畫面設計（顏色、尺寸、文字）
 │
 ├── src/                       所有畫面與前端程式
 │   ├── main.tsx               程式入口
 │   ├── App.tsx                依狀態切換畫面 A（輸入代號）與畫面 B（聊天室）
+│   ├── config.ts              各種數字（字數上限、心跳秒數…）集中在這裡
+│   ├── text.ts                畫面上所有的文字集中在這裡
 │   ├── backend/               「後端介面」與它的兩種實作
 │   │   ├── types.ts           資料格式與介面的定義（第 5 節）
 │   │   ├── mock.ts            假後端（階段一）
+│   │   ├── mock.test.ts       假後端的自動測試
 │   │   ├── supabase.ts        Supabase 後端（階段二才新增）
 │   │   └── index.ts           決定目前使用哪一個後端
+│   ├── hooks/
+│   │   ├── useChatRoom.ts     聊天室的資料：訊息、名單、連線狀態
+│   │   └── useMediaQuery.ts   判斷手機或電腦版面
 │   ├── screens/
 │   │   ├── JoinScreen.tsx     畫面 A
 │   │   └── ChatScreen.tsx     畫面 B
-│   ├── components/            畫面的小零件：訊息列表、輸入框、線上名單、連線提示…
+│   ├── components/            畫面的小零件：頂端列、訊息列表、輸入框、線上名單、連線橫條、測試面板…
 │   ├── lib/
-│   │   ├── nickname.ts        代號檢查與正規化
-│   │   └── color.ts           代號對應固定顏色
-│   └── styles/                由 /design 與 /frontend-design 決定
+│   │   ├── nickname.ts        代號與訊息的規則檢查
+│   │   ├── color.ts           代號對應固定顏色
+│   │   ├── chatItems.ts       把訊息整理成「日期線、提示、一組組發言」
+│   │   ├── time.ts            時間與日期的顯示
+│   │   └── storage.ts         瀏覽器儲存空間（含分頁暗碼）
+│   └── styles/                tokens.css（顏色等變數，見 docs/design.md）與 app.css
 │
 ├── supabase/
 │   └── migrations/            資料庫的建立指令（階段二才新增）
