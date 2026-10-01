@@ -26,10 +26,12 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
-        # 階段二：把 Supabase 的專案網址與公開金鑰（Repository variables）帶進建置。
-        # env:
-        #   VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-        #   VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+        # 把 Supabase 的專案網址與公開金鑰（Repository variables）帶進建置。
+        # 這兩個值本來就會出現在發佈的網頁裡，所以用 Variables，不用 Secrets。
+        # 沒有設定時，網頁會退回假後端（示範資料）。
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

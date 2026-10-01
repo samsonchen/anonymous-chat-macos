@@ -463,13 +463,13 @@ flowchart TD
 
 **儲存庫（repo）**：放這個專案所有檔案的地方，在 GitHub 上。
 
-以下是結構。**階段一已經建好，只有標明「階段二才新增」的（`supabase.ts`、`supabase/`）還沒有。**
+以下是目前的結構（階段一與階段二都已經建好）。
 
 ```
 anonymous-chat-macos/
 ├── README.md                  專案簡介、怎麼在自己電腦上開起來
 ├── .gitignore                 不要上傳的檔案清單（含 .env.local）
-├── .env.example               金鑰設定範本，只有名稱沒有實際的值
+├── .env.example               金鑰設定範本，只有名稱沒有實際的值（實際的值放 .env.local，不上傳）
 ├── package.json               專案使用哪些工具的清單
 ├── vite.config.ts             整理網頁檔案時的設定（含 GitHub Pages 的路徑）
 ├── index.html                 網頁入口
@@ -488,8 +488,9 @@ anonymous-chat-macos/
 │   │   ├── types.ts           資料格式與介面的定義（第 5 節）
 │   │   ├── mock.ts            假後端（階段一）
 │   │   ├── mock.test.ts       假後端的自動測試
-│   │   ├── supabase.ts        Supabase 後端（階段二才新增）
-│   │   └── index.ts           決定目前使用哪一個後端
+│   │   ├── supabase.ts        Supabase 後端（階段二）
+│   │   ├── supabase.e2e.test.ts  連真的 Supabase 的端對端測試（平常不跑，要加環境變數）
+│   │   └── index.ts           決定使用哪一個後端：有設定 Supabase 網址與金鑰就用 Supabase，沒有就用假後端
 │   ├── hooks/
 │   │   ├── useChatRoom.ts     聊天室的資料：訊息、名單、連線狀態
 │   │   └── useMediaQuery.ts   判斷手機或電腦版面
@@ -506,7 +507,9 @@ anonymous-chat-macos/
 │   └── styles/                tokens.css（顏色等變數，見 docs/design.md）與 app.css
 │
 ├── supabase/
-│   └── migrations/            資料庫的建立指令（階段二才新增）
+│   └── sql/                   資料庫的建立指令，貼到 Supabase 後台的 SQL Editor 執行
+│       ├── 01_chat.sql        資料表、權限規則、資料庫函式、保留 200 則、即時通知
+│       └── 02_cron.sql        每 10 秒清掃一次（pg_cron）
 │
 └── .github/
     └── workflows/
